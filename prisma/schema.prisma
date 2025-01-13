@@ -20,6 +20,38 @@ model User{
   Name String 
   UserName String @unique
   Password String
+  //can be null ('profile' coming from profile table)
+  Profile profile?
+//user have product(there are several products)
+  Product Product[]
   CreateAt DateTime @default(now())
   UpdateAt DateTime @updatedAt
+}
+
+//one to one relation 
+//In this case, the user does not need to have an account, and a profile is required for the user."
+//create profile table
+model profile{
+  ID Int @id @default(autoincrement())
+  Image String
+  //profile have user details
+  //relation use for forign key side
+  UserDetails User @relation(fields: [UserId],references: [Id])
+
+  //comming from User (forign key)
+  UserId Int @unique
+
+  createAt DateTime @default(now())
+  UpdateAt DateTime @updatedAt
+}
+
+//one to many user and product
+model Product{
+  pid Int @id @default(autoincrement())
+  Pname String 
+  
+  User User @relation(fields: [UserId], references: [Id])
+
+  //comming from User (forign key)
+  UserId Int @unique
 }
