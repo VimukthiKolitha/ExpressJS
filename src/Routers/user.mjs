@@ -1,9 +1,18 @@
 import { Router } from "express";
+import { checkSchema, matchedData, query, validationResult } from "express-validator";
+
 //import { data } from "../userInfo/userInfo.mjs";
-
 import { PrismaClient } from '@prisma/client';
-const DB = new PrismaClient();
 
+//import login validation file
+import { regnVal } from "./Validation.mjs";
+
+//import login error file
+import {loginError} from "../utils/errormsgCreate.mjs"
+
+import { logval } from "./Validation.mjs";
+
+const DB = new PrismaClient();
 
 const userRouter = Router();
 
@@ -143,7 +152,113 @@ userRouter.delete('/api/v1/user/dalete', async(req,res) =>{
         data:'null'
     })
 })
+//register 
+
+/*http://localhost:4000/api/Roters/login
+
+json body
+{
+    "Name":"",
+    "UserName":"sergio",
+    "Password":"12323"
+} */
+userRouter.post('/api/Roters/register',regnVal,async(req,res) =>{
+    const error = validationResult(req);
+    const logErr = loginError(error.array());
+    
+    if(error.array().length)
+    {
+        return res.status(400).json({
+            msg:'Error',
+            error: logErr,
+            data:null
+        });
+    }
+
+    const data = matchedData(req)
+try {
+    await DB.user.create({data});
+    return res.status(500).json({
+        msg:'User Created',
+        error: 'null',
+        data:'null'
+    });
+
+} catch (error) {
+    console.log(error);
+    //check if user already exist
+    if(error.code === 'P2002')
+    {
+        return res.status(201).json({
+            msg:'error',
+            error:'User already exist',
+            data:'null',
+        });
+    }
+
+    return res.status(500).json({
+        msg:'error',
+        error:'database error',
+        data:'null',
+    });
+}
+});
+
 //login
-//register
+
+//http://localhost:4000/api/Router/login
+/*{
+  "UserName": "blaze",
+  "Password":"28"
+}*/
+userRouter.post('/api/Router/login',logval('UserName','Password'),async(req,res)=>{
+    
+    const error = validationResult(req);
+    const logErr = loginError(error.array());
+    
+    if(error.array().length)
+    {
+        return res.status(400).json({
+            msg:'Error',
+            error: logErr,
+            data:null
+        });
+    }
+    const data = matchedData(req)
+
+    try {
+        const user = await DB.user.findUnique({where:{UserName:data.UserName}});
+
+        //check password
+        if(user !== null)
+        {
+          if(user.Password === data.Password)
+          {
+            return res.status(201).json({
+                msg:'okey',
+                error: 'Successfully login',
+                data:null
+            });
+          }
+
+          return res.status(404).json({
+            msg:'Error',
+            error: 'password incorect',
+            data:null
+        });
+        }
+        return res.status(404).json({
+            msg:'Error',
+            error: 'user not found',
+            data:null
+        });
+    } catch (error) {
+        return res.status(400).json({
+            msg:'Error',
+            error: 'database error',
+            data:null
+        });
+    }
+})
 
 export default userRouter;
