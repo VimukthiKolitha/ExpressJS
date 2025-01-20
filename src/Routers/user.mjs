@@ -12,6 +12,10 @@ import {loginError} from "../utils/errormsgCreate.mjs"
 
 import { logval } from "./Validation.mjs";
 
+import { tokengen,decToken,verify } from "../utils/token.mjs";
+
+import {midleToke} from "../utils/tokenMidleWare.mjs";
+
 const DB = new PrismaClient();
 
 const userRouter = Router();
@@ -229,15 +233,27 @@ userRouter.post('/api/Router/login',logval('UserName','Password'),async(req,res)
     try {
         const user = await DB.user.findUnique({where:{UserName:data.UserName}});
 
+        
         //check password
         if(user !== null)
         {
+            
           if(user.Password === data.Password)
           {
+            
+                 //pass data to payload. in here  payload is create as object
+            const payload = {
+                //get user.UserName
+                username : user.UserName 
+            }
+            //send payload
+               const token =  tokengen(payload);
+                console.log(token);
+
             return res.status(201).json({
                 msg:'okey',
                 error: 'Successfully login',
-                data:null
+                data:null,
             });
           }
 
@@ -259,6 +275,44 @@ userRouter.post('/api/Router/login',logval('UserName','Password'),async(req,res)
             data:null
         });
     }
+})
+
+//token decord (not necessary)
+/*{
+  "UserName": "blaze",
+  "Password":"28",
+  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImJsYXplIiwiaWF0IjoxNzM3MzA3NzMwfQ.olld_yiTwn9r5WCBjzuVSYn7M-voJM36OsHVJDXl840"
+}*/
+userRouter.post('/api/decord/token',(req,res) =>{
+    const token = req.body.token;
+    
+    const a = decToken(token);
+    res.sendStatus(201);
+    console.log(a);
+
+})
+
+//token verify
+/*{
+  "UserName": "blaze",
+  "Password":"28",
+  "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImJsYXplIiwiaWF0IjoxNzM3MzA3NzMwfQ.olld_yiTwn9r5WCBjzuVSYn7M-voJM36OsHVJDXl840"
+} */
+userRouter.post('/api/verify/token',(req,res) =>{
+
+    const token = req.body.token;
+
+    const p = verify(token);
+
+    res.sendStatus(200);
+    console.log(p);
+})
+
+userRouter.post('api/token',midleToke,(req,res) =>{
+    return res.status(200).json({
+        msg:'success',
+        data:'null'
+    })
 })
 
 export default userRouter;
